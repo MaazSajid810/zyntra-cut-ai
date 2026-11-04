@@ -1,0 +1,16 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1
+python-multipart>=0.0.20,<1
+faster-whisper>=1.1,<2
+imageio-ffmpeg>=0.6,<1
+av>=14,<17
+pytest>=8,<10
+httpx>=0.28,<1
+yt-dlp[default,curl-cffi]>=2026.10.21
+uroman==1.3.1.1
+# Urdu lexicon/statistical transliteration; pinned source (code MIT, data CC BY-SA 4.0).
+urdunlp @ https://github.com/hammasbuilds/urdunlp/archive/a2622de9aa14ba508772d9dcd2d8b7073093515c.zip
+
+pillow>=11,<13
+numpy>=1.26,<3
+sentencepiece>=0.2,<0.3

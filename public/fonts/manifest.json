@@ -1,0 +1,127 @@
+[
+  {
+    "file": "Anton-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/anton/Anton-Regular.ttf",
+    "sha256": "a4ba3a92350ebb031da0cb47630ac49eb265082ca1bc0450442f4a83ab947cab"
+  },
+  {
+    "file": "anton-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/anton/OFL.txt",
+    "sha256": "ee67e6ee22790b7929f1a3769ca2801d565c64b5a9096942c1adf5596de9c9e4"
+  },
+  {
+    "file": "BebasNeue-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf",
+    "sha256": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73"
+  },
+  {
+    "file": "bebasneue-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/OFL.txt",
+    "sha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341"
+  },
+  {
+    "file": "Poppins-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf",
+    "sha256": "7e65201e9b79159e2300267cc885e16c8dcef2424cdfa09a29bfb0980a94a7ba"
+  },
+  {
+    "file": "Poppins-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf",
+    "sha256": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c"
+  },
+  {
+    "file": "poppins-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/OFL.txt",
+    "sha256": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573"
+  },
+  {
+    "file": "Righteous-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/righteous/Righteous-Regular.ttf",
+    "sha256": "2ffb3fe5c27d7e6571210b800448c4e234e651b46c6b4426c1bb567e5341348a"
+  },
+  {
+    "file": "righteous-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/righteous/OFL.txt",
+    "sha256": "1c5bc055869d5e9151ec7774082727db720ec4293c65be67f91a4bdcaeb02998"
+  },
+  {
+    "file": "Bangers-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bangers/Bangers-Regular.ttf",
+    "sha256": "4160a7311de9342674cce9160cde9fcbb30f48190397d86ff1b70b455af65824"
+  },
+  {
+    "file": "bangers-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bangers/OFL.txt",
+    "sha256": "630dd5a307c0657b094d324e069b390edf90182fe5003639e06c02a0e5769af7"
+  },
+  {
+    "file": "Lobster-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lobster/Lobster-Regular.ttf",
+    "sha256": "d6568e697fd50cedc0be04d8aae4127fe95add607e7bff954ca88604be80c205"
+  },
+  {
+    "file": "lobster-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/lobster/OFL.txt",
+    "sha256": "88aece7d90f2bb7049719f11619a560af22af3451af141f12aa4f46bb157a99b"
+  },
+  {
+    "file": "Pacifico-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+    "sha256": "5b6c0d5334a7bf77dea52b975c5a0c408878c0f7115ed5b6fb151f634b7bf701"
+  },
+  {
+    "file": "pacifico-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/OFL.txt",
+    "sha256": "a47e5daeda73568969395c656823102678f2eefb0d7d7ecb47aac4cc17e42204"
+  },
+  {
+    "file": "Kalam-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/kalam/Kalam-Bold.ttf",
+    "sha256": "2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded"
+  },
+  {
+    "file": "kalam-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/kalam/OFL.txt",
+    "sha256": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f"
+  },
+  {
+    "file": "NotoSansDevanagari.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf",
+    "sha256": "14ec4af41f27482216d1c2229f417ff9b1425e1babb014e57d1d40d03229853e"
+  },
+  {
+    "file": "notosansdevanagari-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansdevanagari/OFL.txt",
+    "sha256": "a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331"
+  },
+  {
+    "file": "NotoSansArabic.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/NotoSansArabic%5Bwdth,wght%5D.ttf",
+    "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e"
+  },
+  {
+    "file": "notosansarabic-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/OFL.txt",
+    "sha256": "07fc70bfeb985cc1a87a8587d0a0c80bab11c86c9dc3fd95b6f0cb332f983e96"
+  },
+  {
+    "file": "NotoSansGurmukhi.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansgurmukhi/NotoSansGurmukhi[wdth,wght].ttf",
+    "sha256": "1e6f728fa620e566f842d81e220265813faa12771214765d289c98e035adc5f2"
+  },
+  {
+    "file": "notosansgurmukhi-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansgurmukhi/OFL.txt",
+    "sha256": "3f7451b7e2c8381be0c5712f7b0dd5c2d75fe787ae16a99f18b7fa45627a0fde"
+  },
+  {
+    "file": "NotoSansBengali.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/NotoSansBengali[wdth,wght].ttf",
+    "sha256": "dcd42978094e584a849c84a51450eeac40c8826057d566ea6d4b9627a403a05a"
+  },
+  {
+    "file": "notosansbengali-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansbengali/OFL.txt",
+    "sha256": "754f0e221aa7d5a915489f3bf1f20fe53ddc35ab2834a4d91656d78f9622de70"
+  }
+]
