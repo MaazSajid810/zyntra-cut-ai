@@ -10,7 +10,7 @@ import imageio_ffmpeg
 from . import captions,compositor
 
 FFMPEG = os.environ.get('FFMPEG_BINARY') or imageio_ffmpeg.get_ffmpeg_exe()
-FONTS = Path(__file__).resolve().parents[1]/'public'/'fonts'
+FONTS = Path(__file__).resolve().parents[1]/'frontend'/'public'/'fonts'
 
 def run(args, cwd=None, timeout=1800):
     for attempt in range(4):

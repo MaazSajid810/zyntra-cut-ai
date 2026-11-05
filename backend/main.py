@@ -16,7 +16,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field, model_validator
 
-from . import guest, importer, media, speech, store, selection, romanization, assets, translation, analysis, platform, dubbing, thumbnails
+from . import guest, importer, media, speech, store, selection, romanization, assets, translation, analysis, workspace as platform, dubbing, thumbnails
 from .languages import SpeechLanguage, CaptionScript, SPEECH_NAMES, CAPTION_TARGETS, caption_name, capability_catalog
 
 log = logging.getLogger('clipforge')
@@ -423,7 +423,7 @@ def translate_voice(project_id:str,options:DubbingInput):
         if not target or not translation.route_available(snapshot['language'],target):
             raise HTTPException(400,'No installed translation model supports this language pair. Your current captions and source audio were kept.')
         if target not in dubbing.voices():
-            raise HTTPException(400,'No installed offline voice supports this language. Run python -m scripts.setup_dubbing or choose another language.')
+            raise HTTPException(400,'No installed offline voice supports this language. Run python -m backend.scripts.setup_dubbing or choose another language.')
     def claim(p):
         if p['status'] in ('queued','transcribing','analyzing') or any(c['status'] in ('queued','rendering') for c in p['clips']):
             raise HTTPException(409,'Wait for the current job to finish.')

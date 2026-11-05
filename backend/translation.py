@@ -51,7 +51,7 @@ def engine(source,target):
     import sentencepiece
     folder=ROOT/f'{source}_{target}'
     if not (folder/'model'/'model.bin').exists():
-        raise ValueError('Translation model is missing. Run python -m scripts.setup_translation, then retry. Your source and transcript are kept.')
+        raise ValueError('Translation model is missing. Run python -m backend.scripts.setup_translation, then retry. Your source and transcript are kept.')
     metadata=json.loads((folder/'metadata.json').read_text(encoding='utf-8'))
     tokenizer=sentencepiece.SentencePieceProcessor(model_file=str(folder/'sentencepiece.model'))
     translator=ctranslate2.Translator(str(folder/'model'),device='cpu',compute_type='int8',inter_threads=1,intra_threads=max(1,min(4,os.cpu_count() or 1)))

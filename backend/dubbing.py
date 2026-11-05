@@ -27,7 +27,7 @@ def executable():
 def command():
     binary = executable()
     if not binary:
-        raise ValueError('Offline voice engine is missing. Run python -m scripts.setup_dubbing, then retry.')
+        raise ValueError('Offline voice engine is missing. Run python -m backend.scripts.setup_dubbing, then retry.')
     folder = Path(binary).resolve().parent
     return [str(binary), *(['--path='+str(folder)] if (folder/'espeak-ng-data').is_dir() else [])]
 
