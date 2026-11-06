@@ -76,3 +76,33 @@ def test_hallucination_loop_is_not_presented_as_recognized_speech():
     with pytest.raises(ValueError,match='unreadable'):
         speech.validate_text('\ufffd \ufffd \ufffd')
     speech.validate_text('No, no. Please listen to what I am saying.')
+
+
+@pytest.mark.parametrize('text',['GTA 6 '+chr(0x0c32)+chr(0x0c4d)*60,'నిని'*50,'hello'*12])
+def test_repeated_syllables_and_combining_marks_inside_one_token_are_rejected(text):
+    with pytest.raises(ValueError,match='repeated or unreadable'):speech.validate_text(text)
+
+
+def test_output_language_does_not_force_english_into_multilingual_model():
+    assert speech.model_name('quick','punjabi','en')==speech.model_name('quick','original','en')
+    assert speech.model_name('quick','urdu','en')==speech.model_name('quick','original','en')
+
+
+@pytest.mark.parametrize('language',['ur','hi','pa','ps','sd'])
+def test_regional_quick_speech_uses_independent_decoder_with_word_times(language):
+    calls=[]
+    recognizer=SimpleNamespace(transcribe=lambda source,**kwargs:calls.append(kwargs))
+    speech.transcribe(recognizer,'source.wav','quick',language=language)
+    assert calls[0]['language']==language and calls[0]['beam_size']==1
+    assert calls[0]['word_timestamps'] and not calls[0]['condition_on_previous_text']
+
+
+def test_confident_wrong_source_is_corrected_before_asr_and_uncertain_mismatch_preserves_transcript(monkeypatch):
+    monkeypatch.setattr(speech,'detect_language',lambda *args:('en',.99))
+    actual,warning=speech.resolve_language(object(),'audio.wav','pa')
+    assert actual=='en' and 'Punjabi' in warning and 'English' in warning
+    assert speech.resolve_language(object(),'audio.wav','auto')==('en',None)
+    monkeypatch.setattr(speech,'detect_language',lambda *args:('ur',.86))
+    with pytest.raises(ValueError,match='previous transcript is kept'):
+        speech.resolve_language(object(),'audio.wav','en')
+    assert speech.resolve_language(object(),'audio.wav','hi')==('hi',None)

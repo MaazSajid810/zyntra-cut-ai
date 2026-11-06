@@ -1,10 +1,11 @@
+export const SOUND_EFFECTS=[['none','None'],['pop','Pop'],['ding','Ding'],['whoosh','Whoosh'],['click','Click'],['success','Success chime'],['error','Error buzz'],['impact','Bass impact'],['sparkle','Sparkle'],['riser','Riser'],['scratch','Scratch']] as const;
 export type EffectSettings = {
   image_asset_id:string|null; image_start:number; image_end:number; image_layout:'overlay'|'full'; image_fit:'contain'|'cover'; image_opacity:number; image_width:number; image_x:number; image_y:number;
   caption_offset:number;
   watermark_enabled:boolean; watermark_text:string; watermark_opacity:number; watermark_size:number; watermark_color:string; watermark_x:number; watermark_y:number;
   logo_asset_id:string|null; logo_opacity:number; logo_width:number; logo_x:number; logo_y:number;
   filler_asset_id:string|null; filler_start:number; filler_end:number; filler_layout:'full'|'pip';
-  music_asset_id:string|null; music_volume:number; sound_effect:'none'|'pop'|'ding'|'whoosh'; sound_at:number; sound_volume:number;
+  music_asset_id:string|null; music_volume:number; sound_effect:typeof SOUND_EFFECTS[number][0]; sound_at:number; sound_volume:number;
   transition:'none'|'fade'|'white'; transition_duration:number;
   caption_mode:'phrase'|'karaoke'|'word'; caption_animation:'none'|'pop'|'bounce'|'scale'|'fade'; highlight_color:string; sticker_enabled:boolean; audio_leveling:boolean; denoise:boolean; zoom:'none'|'gentle'|'punch';
   sticker_timing:'full'|'start'|'middle'|'end'|'custom'; sticker_animation:'none'|'pop'|'fade'|'slide'; sticker_duration:number; sticker_at:number; voice_strength:number; cover_source_captions:boolean; source_caption_y:number; source_caption_height:number;

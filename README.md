@@ -75,12 +75,17 @@ commands; the frontend commands are the same.
 
 1. Open **Create**. Upload your own video or paste a supported public video URL.
 2. Choose the maximum clip count, duration and ratio: Original, 9:16, 1:1, 16:9 or 4:5.
-3. Set **Spoken language** to the language actually spoken. Select caption output
-   separately, or leave Original for no translation.
+3. Leave speech detection on **Auto**, or choose the language actually spoken.
+   Select your desired caption language separately. Output language never forces
+   unrelated speech recognition; Original keeps native captions.
 4. Click **Create AI Clips**. Processing and results stay on the same page.
 5. Preview clips and open a clip to edit captions, effects, text, logos, audio or images.
    **Apply edits to all clips** can copy styling across the project.
 6. Render the changes, preview the finished video, then click Download.
+
+In a clip, open **Audio & sound effects**. Ten built-in effects have an audio
+preview, volume and start time in exported-clip seconds. Use **Apply & render**
+to mix the chosen effect with original or dubbed speech and optional music.
 
 The requested clip count is a maximum. If only four distinct moments qualify,
 the tool returns four and explains the shortfall. It does not duplicate footage
@@ -95,6 +100,9 @@ exporting. Keep browser cookies to retain access to your private guest workspace
 Run these in `backend/` after installing its dependencies:
 
 ```powershell
+# Recommended multilingual captions (M2M100 CPU INT8, approximately 494 MB):
+.\.venv\Scripts\python.exe run.py setup-multilingual
+
 # Install English/Urdu/Hindi caption translation models once:
 .\.venv\Scripts\python.exe run.py setup-translation
 
@@ -109,6 +117,13 @@ On Linux, install `espeak-ng` with the operating system package manager.
 Then open **Transcript → Translate captions + voice**. Only installed translation
 routes and supported offline voices are offered. This produces basic synthetic
 speech timed to sentence slots and replaces the original audio, including music.
+The main player switches to the dubbed video when ready. Compare original audio
+or download the complete dubbed MP4; existing clip exports can be rendered with
+the same track. Edited captions require regenerating the voice. M2M100 runs
+locally and supports more translation pairs, including Punjabi, Sindhi and
+Pashto captions. Voices are a separate capability: the bundled engine has no
+Pashto voice. Low-resource translation can be poor; compare translated text with
+the saved source and edit it before regenerating the voice.
 **It does not clone voices or animate the speaker's lips.** Native caption choices
 do not mean every language can be translated. Review recognition and translation.
 

@@ -113,7 +113,9 @@ def test_manual_native_captions_without_detected_language_keep_script_and_source
     ('mr','मैं ठीक हूँ।'),
     (None,'An English manual caption.'),
 ])
-def test_manual_script_support_does_not_invent_a_translation_route(language,text):
+def test_manual_script_support_does_not_invent_a_translation_route(language,text,tmp_path,monkeypatch):
+    from backend import translation
+    monkeypatch.setattr(translation,'ROOT',tmp_path/'uninstalled-models')
     source=[{'id':0,'start':0,'end':3,'text':text}]
     converted,script,warning=main.caption_conversion(source,language,'hindi')
     assert converted==source and script=='original' and 'unavailable' in warning

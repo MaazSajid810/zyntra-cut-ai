@@ -2,6 +2,7 @@
 import os
 from functools import lru_cache
 import re
+import unicodedata
 from contextlib import contextmanager
 import tempfile
 from pathlib import Path
@@ -10,7 +11,11 @@ from collections import Counter
 
 def validate_text(text):
     tokens=text.casefold().split()
-    if text.count('\ufffd')>=3 or len(tokens)>=32 and Counter(tokens).most_common(1)[0][1]/len(tokens)>.65:
+    compact=re.sub(r'\s+','',unicodedata.normalize('NFC',text.casefold()))
+    # Some failed multilingual decodes repeat syllables/combining marks inside
+    # a single token. A whitespace word counter cannot detect those loops.
+    loop=any(len(match.group())>=32 for match in re.finditer(r'(.{1,12}?)\1{7,}',compact))
+    if loop or text.count('\ufffd')>=3 or len(tokens)>=32 and Counter(tokens).most_common(1)[0][1]/len(tokens)>.65:
         raise ValueError('Speech recognition produced repeated or unreadable words instead of reliable captions. '
                          'Choose the actual Spoken language and re-transcribe in Quick or Balanced mode. Your previous transcript is kept.')
 
@@ -42,8 +47,10 @@ def fast_batch_size():
 
 
 def model_name(mode,script='original',language='auto'):
-    if script not in ('original','roman_urdu'):return os.environ.get('WHISPER_HINDI_MODEL','small')
-    if language in ('pa','ps','sd'):return os.environ.get('WHISPER_HINDI_MODEL','small')
+    # A translated output must not choose the speech model or decoding language.
+    if script not in ('original','roman_urdu') and language in ('auto','ur','hi'):
+        return os.environ.get('WHISPER_HINDI_MODEL','small')
+    if language in ('ur','hi','pa','ps','sd'):return os.environ.get('WHISPER_HINDI_MODEL','small')
     if script=='roman_urdu' and language!='en':return os.environ.get('WHISPER_ROMAN_MODEL','small')
     return 'tiny' if mode=='fast' else os.environ.get('WHISPER_MODEL','base')
 
@@ -58,9 +65,8 @@ def load_model(name,cache):
         return WhisperModel(name,**settings)
 
 
-def check_language(recognizer, source, requested):
-    """Independent detection warns about forced decoding in the wrong language."""
-    if requested in (None,'auto') or not hasattr(recognizer,'detect_language'):
+def detect_language(recognizer, source):
+    if not hasattr(recognizer,'detect_language'):
         return None
     import wave
     import numpy as np
@@ -69,6 +75,31 @@ def check_language(recognizer, source, requested):
             return None
         samples=np.frombuffer(audio.readframes(16000*90),dtype='<i2').astype(np.float32)/32768
     detected,confidence,_=recognizer.detect_language(audio=samples,vad_filter=True,language_detection_segments=3)
+    return detected,confidence
+
+
+def resolve_language(recognizer,source,requested):
+    """Prevent a subtitle target accidentally forcing unrelated source speech."""
+    result=detect_language(recognizer,source)
+    if not result:return (None if requested in (None,'auto') else requested),None
+    detected,confidence=result
+    if requested in (None,'auto'):
+        return (detected if confidence>=.8 else None),None
+    if detected==requested or {detected,requested}=={'ur','hi'} or confidence<.8:
+        return requested,None
+    from .languages import SPEECH_NAMES
+    detail=f"Audio detection found {SPEECH_NAMES.get(detected,detected)} ({confidence:.0%}), while source speech was set to {SPEECH_NAMES.get(requested,requested)}."
+    if confidence<.95:
+        raise ValueError(detail+' Choose Detect & repair captions to avoid decoding in the wrong language. Your previous transcript is kept.')
+    return detected,detail+' Captions were recognized from the detected speech; the subtitle output language is applied separately.'
+
+
+def check_language(recognizer, source, requested):
+    """Compatibility diagnostic; processing uses resolve_language before decoding."""
+    if requested in (None,'auto'):return None
+    result=detect_language(recognizer,source)
+    if not result:return None
+    detected,confidence=result
     if confidence>=.8 and detected!=requested and {detected,requested}!={'ur','hi'}:
         from .languages import SPEECH_NAMES
         return (f'Source language is set to {SPEECH_NAMES.get(requested,requested)}, but an independent audio sample detected '
@@ -90,7 +121,9 @@ def transcribe(recognizer, source, mode, language=None, caption_script='original
         options=script_options(target)
     def decode(settings):
         detection={'language_detection_segments':3,'language_detection_threshold':.8} if not settings.get('language') else {}
-        if mode in ('fast','quick'):
+        # Batched decoding collapsed real Urdu dialogue into one repeated late
+        # segment. Independent decoding preserves these languages and timings.
+        if mode in ('fast','quick') and settings.get('language') not in ('ur','hi','pa','ps','sd'):
             from faster_whisper import BatchedInferencePipeline
             return BatchedInferencePipeline(model=recognizer).transcribe(
                 str(source),batch_size=fast_batch_size(),beam_size=1,temperature=0,

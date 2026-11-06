@@ -29,3 +29,15 @@ Noto Sans Devanagari (Noto Project Authors / Google Fonts) is bundled under SIL 
   The installer pins immutable mirror revisions and package checksums for these
   downloads, validates metadata/model files and records attribution in each
   private model directory. Model weights are not part of the Git repository.
+
+## Optional multilingual translation
+
+- **M2M100 418M**, Meta/Facebook AI, MIT license. [Original model and license](https://huggingface.co/facebook/m2m100_418M),
+  [Fairseq source](https://github.com/facebookresearch/fairseq/tree/main/examples/m2m_100).
+  The optional CPU INT8 conversion comes from
+  [JustFrederik/m2m_100_418m_ct2_int8](https://huggingface.co/JustFrederik/m2m_100_418m_ct2_int8)
+  at immutable revision `1aeed44db4dd61a486bba44acf54c76507082a2c`.
+  `backend/scripts/setup_multilingual.py` verifies model/tokenizer SHA-256 values
+  and preserves the model card locally. Model weights stay in ignored private
+  storage and are not redistributed in this source repository. Machine
+  translation quality varies, particularly for low-resource languages.

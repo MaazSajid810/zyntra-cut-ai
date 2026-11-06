@@ -25,7 +25,7 @@ test('generate prepares a preview then supports scheduled stickers, voice compar
     await page.getByRole('button',{name:'Generate 1 new clips',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Rendered clip preview',exact:true})).toBeVisible({timeout:60000});
     await page.getByRole('button',{name:'Edit this clip',exact:true}).click();
-    await page.getByRole('button',{name:'Audio',exact:true}).click();
+    await page.getByRole('button',{name:'Audio & sound effects',exact:true}).click();
     await expect(page.getByLabel('Voice strength',{exact:true})).toBeVisible();
     await expect(page.getByLabel('Subtitle font',{exact:true})).toBeHidden();
     await page.getByRole('button',{name:'Frame & trim',exact:true}).click();

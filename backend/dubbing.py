@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import wave
+from copy import deepcopy
 
 import numpy as np
 
@@ -73,6 +74,28 @@ def synthesize(text, language, output):
         text_file.unlink(missing_ok=True)
 
 
+def merge_sentences(first,second):
+    result={**first,'end':max(first['end'],second['end']),'text':first['text'].rstrip()+' '+second['text'].lstrip()}
+    if first.get('source_text') or second.get('source_text'):
+        result['source_text']=' '.join(item.get('source_text',item['text']) for item in (first,second))
+    result.pop('words',None)
+    return result
+
+
+def sentence_groups(segments):
+    """Keep fragments and very short adjacent utterances in a speakable slot."""
+    result=[]
+    for segment in deepcopy(segments):
+        if result:
+            previous=result[-1]
+            short=min(previous['end']-previous['start'],segment['end']-segment['start'])<3
+            incomplete=not previous['text'].rstrip().endswith(('.', '?', '!', '۔', '؟', '।'))
+            if segment['start']-previous['end']<=.5 and segment['end']-previous['start']<=12 and (short or incomplete):
+                result[-1]=merge_sentences(previous,segment);continue
+        result.append(segment)
+    return result
+
+
 def create_track(segments, language, duration, output, progress=None):
     """Disk-backed mono PCM; each utterance ends inside its original sentence slot."""
     if language not in voices():
@@ -85,10 +108,13 @@ def create_track(segments, language, duration, output, progress=None):
         stack.callback(samples._mmap.close)
         samples[:] = 0
         previous_end = 0
-        for index, segment in enumerate(segments):
+        index=0
+        while index<len(segments):
+            segment=segments[index]
             start = max(0, round(segment['start'] * RATE), previous_end)
             end = min(total, round(segment['end'] * RATE))
             if not segment['text'].strip():
+                index+=1
                 continue
             if end <= start:
                 raise ValueError('Overlapping subtitle sentences leave no room for a dubbed voice. Correct their timestamps first.')
@@ -98,8 +124,21 @@ def create_track(segments, language, duration, output, progress=None):
             with wave.open(str(raw), 'rb') as audio:
                 spoken_duration = audio.getnframes()/audio.getframerate()
             slot = (end-start)/RATE
+            # ASR sometimes assigns a short last word its own tiny slot. Use
+            # following silence before speeding speech up; never cross the next
+            # sentence or silently truncate translated words.
+            next_start=min(total,round(segments[index+1]['start']*RATE)) if index+1<len(segments) else total
+            if spoken_duration/slot>2.5 and next_start>end:
+                end=min(next_start,max(end,start+round(spoken_duration/2*RATE)))
+                slot=(end-start)/RATE
             tempo = max(1, spoken_duration/slot)
             if tempo > 2.5:
+                if index+1<len(segments) and segments[index+1]['start']-segment['end']<=.75 and segments[index+1]['end']-segment['start']<=30:
+                    # A short ASR fragment can be impossible to speak alone.
+                    # Merge whole adjacent sentences, then synthesize again;
+                    # captions receive the same merged text and fitted timing.
+                    segments[index:index+2]=[merge_sentences(segment,segments[index+1])]
+                    continue
                 raise ValueError(f'Subtitle {index+1} is too long to speak clearly in its time slot. Shorten the translation or adjust its timestamps.')
             filters = []
             while tempo > 2:
@@ -115,10 +154,23 @@ def create_track(segments, language, duration, output, progress=None):
             previous_end = end
             if progress:
                 progress(index+1, len(segments))
+            segment['end']=round(end/RATE,5)
+            segment['start']=round(start/RATE,5)
+            index+=1
         with wave.open(str(output), 'wb') as audio:
             audio.setnchannels(1); audio.setsampwidth(2); audio.setframerate(RATE)
             for start in range(0, total, RATE*30):
                 audio.writeframes(samples[start:start+RATE*30].tobytes())
+
+
+def create_video(source,audio,output,duration):
+    """Mux translated voice into a complete playable video, without clipping."""
+    import av
+    with av.open(str(source)) as container:
+        compatible=container.streams.video[0].codec_context.name in ('h264','av1','libdav1d','vp9')
+    encoding=['-c:v','copy'] if compatible else ['-vf','scale=640:-2','-c:v','libx264','-preset','ultrafast','-crf','25','-pix_fmt','yuv420p']
+    media.run(['-i',str(source),'-i',str(audio),'-map','0:v:0','-map','1:a:0',
+               *encoding,'-c:a','aac','-b:a','128k','-t',str(duration),'-movflags','+faststart',str(output)])
 
 
 def audio_for_project(project, folder):

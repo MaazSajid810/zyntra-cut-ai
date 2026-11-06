@@ -85,6 +85,7 @@ def test_transcription_job_converts_words_before_generating(client,monkeypatch):
     calls=[]
     monkeypatch.setattr(main.pool,'submit',lambda *args:calls.append(args))
     monkeypatch.setitem(main.models,'small',object())
+    monkeypatch.setattr(main,'model',object())
     source=urdu_segment()
     segment=SimpleNamespace(start=0,end=3,text=source['text'],words=[SimpleNamespace(**w) for w in source['words']])
     seen=[]

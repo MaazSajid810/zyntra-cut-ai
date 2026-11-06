@@ -43,10 +43,14 @@ test('real logo drag, watermark, B-roll, music, transitions and caption sync exp
     const photo=page.waitForResponse(r=>r.url().includes('/assets?kind=image')&&r.request().method()==='POST');
     await page.getByLabel('Upload image',{exact:true}).setInputFiles('artifacts/studio-logo.png');expect((await photo).status()).toBe(201);
     await page.getByLabel('Photo start',{exact:true}).fill('0.8');await page.getByLabel('Photo end',{exact:true}).fill('1.6');
-    await page.getByRole('button',{name:'Audio',exact:true}).click();
+    await page.getByRole('button',{name:'Audio & sound effects',exact:true}).click();
     const music=page.waitForResponse(r=>r.url().includes('/assets?kind=music')&&r.request().method()==='POST');
     await page.getByLabel('Upload music',{exact:true}).setInputFiles('artifacts/studio-music.wav');expect((await music).status()).toBe(201);
-    await page.getByLabel('Sound effect',{exact:true}).selectOption('ding');await page.getByLabel('Sound starts',{exact:true}).fill('1.1');
+    await page.getByLabel('Sound effect',{exact:true}).selectOption('sparkle');await page.getByLabel('Sound starts',{exact:true}).fill('1.1');
+    const soundPreview=page.getByLabel('Sound effect preview',{exact:true});
+    await expect.poll(()=>soundPreview.evaluate((audio:HTMLAudioElement)=>audio.readyState)).toBeGreaterThan(0);
+    await page.getByLabel('Sound volume',{exact:true}).fill('0.3');
+    await expect.poll(()=>soundPreview.evaluate((audio:HTMLAudioElement)=>audio.volume)).toBeCloseTo(.3);
     await page.getByRole('button',{name:'Effects',exact:true}).click();
     await page.getByLabel('Video effect',{exact:true}).selectOption('cinematic');
     await page.getByLabel('Transition',{exact:true}).selectOption('fade');
@@ -56,7 +60,7 @@ test('real logo drag, watermark, B-roll, music, transitions and caption sync exp
     await expect(page.getByRole('button',{name:'Export ready',exact:true})).toBeVisible({timeout:60000});
     await expect.poll(()=>page.locator('.video-stage video').evaluate((v:HTMLVideoElement)=>v.readyState)).toBeGreaterThanOrEqual(1);
     const saved=(await(await page.request.get(base)).json()).clips[0];
-    expect(saved).toMatchObject({watermark_enabled:true,watermark_text:'MY CHANNEL',watermark_opacity:.35,filler_layout:'pip',transition:'fade',video_effect:'cinematic',sound_effect:'ding',caption_offset:.25});
+    expect(saved).toMatchObject({watermark_enabled:true,watermark_text:'MY CHANNEL',watermark_opacity:.35,filler_layout:'pip',transition:'fade',video_effect:'cinematic',sound_effect:'sparkle',caption_offset:.25});
     expect(saved.logo_asset_id).toBeTruthy();expect(saved.music_asset_id).toBeTruthy();expect(saved.image_asset_id).toBeTruthy();
     expect(await(await page.request.get(base+'/subtitles?clip_id='+saved.id)).text()).toContain('00:00:00,450');
     const video=await page.request.get(base+'/media/'+saved.id);expect(video.status()).toBe(200);

@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState,type PointerEvent,type KeyboardEvent} from 'react';
 import {decodeApiResponse,guestFetch} from '../../lib/api';
-import {type EffectSettings} from '../../lib/editor';
+import {SOUND_EFFECTS,type EffectSettings} from '../../lib/editor';
 import PhotoLayerPanel from './PhotoLayerPanel';
 
 type Asset={id:string;kind:'logo'|'filler'|'music'|'image';name:string;width?:number;height?:number;duration?:number};
@@ -15,6 +15,8 @@ export default function StudioLayers({projectId,length,effects:e,disabled,onChan
   const [stageWidth,setStageWidth]=useState(400);
   const [sourceRatio,setSourceRatio]=useState(16/9);
   const stage=useRef<HTMLDivElement>(null);
+  const soundPreview=useRef<HTMLAudioElement>(null);
+  useEffect(()=>{if(soundPreview.current)soundPreview.current.volume=e.sound_volume;},[e.sound_volume,e.sound_effect]);
   const drag=useRef<{kind:'text'|'logo';px:number;py:number;x:number;y:number;freeX:number;freeY:number}|null>(null);
   useEffect(()=>{let alive=true;void Promise.all([guestFetch(`/api/projects/${projectId}/assets`).then(async response=>decodeApiResponse<Asset[]>(await response.text(),response.status)),guestFetch('/api/assets/limits').then(async response=>decodeApiResponse<Limits>(await response.text(),response.status))]).then(([data,policy])=>{if(alive){setAssets(data);setLimits(policy);}}).catch(err=>{if(alive)setErrors({general:String(err)});});return()=>{alive=false;};},[projectId]);
   useEffect(()=>{if(!stage.current)return;const observer=new ResizeObserver(entries=>setStageWidth(entries[0].contentRect.width));observer.observe(stage.current);return()=>observer.disconnect();},[]);
@@ -86,7 +88,7 @@ export default function StudioLayers({projectId,length,effects:e,disabled,onChan
     <PhotoLayerPanel projectId={projectId} ratio={ratio} length={length} effects={e} photo={assets.find(asset=>asset.id===e.image_asset_id)} disabled={disabled} onChange={onChange}>{picker('image','Photo',e.image_asset_id)}</PhotoLayerPanel>
     <fieldset data-tool-category="audio" className="studio-layer-panel" disabled={disabled}><legend>Music and sound effects</legend>
       {picker('music','Background music',e.music_asset_id)}<label>Music volume ({Math.round(e.music_volume*100)}%)<input aria-label="Music volume" type="range" min="0" max="1" step=".01" value={e.music_volume} onChange={event=>onChange({music_volume:Number(event.target.value)})}/></label>
-      <div className="layer-controls"><label>Sound effect<select aria-label="Sound effect" value={e.sound_effect} onChange={event=>onChange({sound_effect:event.target.value as EffectSettings['sound_effect']})}>{[['none','None'],['pop','Pop'],['ding','Ding'],['whoosh','Whoosh']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label>Sound starts (output seconds)<input aria-label="Sound starts" type="number" min="0" max={length} step=".1" value={e.sound_at} onChange={event=>onChange({sound_at:Number(event.target.value)})}/></label><label>Sound volume ({Math.round(e.sound_volume*100)}%)<input aria-label="Sound volume" type="range" min="0" max="1" step=".01" value={e.sound_volume} onChange={event=>onChange({sound_volume:Number(event.target.value)})}/></label></div><p>Sound effects are original synthesized audio. Uploaded music loops with an ending fade. Source Mute silences the original voice; added music/effects keep their own volume. Render and listen before downloading.</p>
+      <div className="layer-controls"><label>Sound effect<select aria-label="Sound effect" value={e.sound_effect} onChange={event=>onChange({sound_effect:event.target.value as EffectSettings['sound_effect']})}>{SOUND_EFFECTS.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label>Sound starts (output seconds)<input aria-label="Sound starts" type="number" min="0" max={length} step=".1" value={e.sound_at} onChange={event=>onChange({sound_at:Number(event.target.value)})}/></label><label>Sound volume ({Math.round(e.sound_volume*100)}%)<input aria-label="Sound volume" type="range" min="0" max="1" step=".01" value={e.sound_volume} onChange={event=>onChange({sound_volume:Number(event.target.value)})}/></label></div>{e.sound_effect!=='none'&&<div><label>Preview sound effect<audio ref={soundPreview} key={e.sound_effect} controls preload="metadata" aria-label="Sound effect preview" src={`/api/sound-effects/${e.sound_effect}`} onPlay={event=>document.querySelectorAll('video,audio').forEach(item=>{if(item!==event.currentTarget)(item as HTMLMediaElement).pause();})}/></label><small>Preview uses the selected volume. Start time is measured from the beginning of the exported clip.</small></div>}<p>Sound effects are original synthesized audio. Uploaded music loops with an ending fade. Source Mute silences the original voice; added music/effects keep their own volume. Render and listen before downloading.</p>
     </fieldset>
   </>;
 }

@@ -47,6 +47,12 @@ def capability_catalog():
     from . import translation
     pairs=[{'source':source,'target':target,'installed':translation.pair_installed(source,target)}
            for source,target in translation.PAIRS]
+    if translation.multilingual.installed(translation.ROOT):
+        # A star via English is enough for discovery to describe all supported
+        # directions; inference itself translates directly between the languages.
+        pairs=[{'source':source,'target':target,'installed':True}
+               for code in sorted(translation.multilingual.LANGUAGES-{'en'})
+               for source,target in (('en',code),(code,'en'))]
     return {
         'speech_languages':[{'code':'auto','name':'Detect automatically'},
                             *({'code':code,'name':name} for code,name in SPEECH_NAMES.items())],

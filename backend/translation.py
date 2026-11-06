@@ -7,6 +7,7 @@ from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from .languages import CAPTION_TARGETS
+from . import multilingual
 import json
 import os
 import re
@@ -34,6 +35,7 @@ def route(source,target):
 
 
 def route_available(source,target):
+    if source in multilingual.LANGUAGES and target in multilingual.LANGUAGES and multilingual.installed(ROOT):return True
     steps=route(source,target)
     return steps is not None and all(pair_installed(*pair) for pair in steps)
 
@@ -58,8 +60,10 @@ def engine(source,target):
     return translator,tokenizer,metadata.get('target_prefix','')
 
 
-def translate_texts(texts,source,target):
+def translate_texts(texts,source,target,progress=None):
     if source==target:return list(texts)
+    if source in multilingual.LANGUAGES and target in multilingual.LANGUAGES and multilingual.installed(ROOT):
+        return multilingual.translate(texts,source,target,ROOT,progress)
     steps=route(source,target)
     if steps is None:
         raise ValueError('No local translation route is available for these languages. Use Original captions to preserve the recognized speech.')
@@ -84,7 +88,7 @@ def translate_texts(texts,source,target):
     return output
 
 
-def convert_segments(segments,source,script):
+def convert_segments(segments,source,script,progress=None):
     from . import romanization
     target=CAPTION_TARGETS.get(script)
     if not target:return deepcopy(segments)
@@ -92,7 +96,7 @@ def convert_segments(segments,source,script):
     if script=='roman_urdu' and source in ('ur','hi'):
         return romanization.convert_segments(segments,script)
     if source==target:return deepcopy(segments)
-    translated=translate_texts([s['text'] for s in segments],source,target)
+    translated=translate_texts([s['text'] for s in segments],source,target,**({'progress':progress} if progress else {}))
     result=[]
     for segment,text in zip(segments,translated):
         item={**segment,'text':romanization.roman_text(text) if script=='roman_urdu' else text,'timing':'translated_sentence','source_text':segment['text']}

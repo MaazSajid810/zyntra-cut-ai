@@ -16,7 +16,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field, model_validator
 
-from . import guest, importer, media, speech, store, selection, romanization, assets, translation, analysis, workspace as platform, dubbing, thumbnails
+from . import guest, importer, media, speech, store, selection, romanization, assets, translation, analysis, workspace as platform, dubbing, thumbnails, compositor
 from .languages import SpeechLanguage, CaptionScript, SPEECH_NAMES, CAPTION_TARGETS, caption_name, capability_catalog
 
 log = logging.getLogger('clipforge')
@@ -268,7 +268,13 @@ def process(project_id):
         global model
         with speech.timeline_audio(directory(project_id)/'source') as audio_source, model_lock:
             mode = p.get('transcription_mode','balanced')
-            model_name = speech.model_name(mode,p.get('caption_script','original'),p.get('speech_language','auto'))
+            # Detect the source independently before selecting a large native
+            # model. Choosing Punjabi output for English must not force Punjabi ASR.
+            if model is None:
+                model = models.get('base') or speech.load_model('base',store.DATA/'models')
+                models['base']=model
+            language,language_warning=speech.resolve_language(model,audio_source,p.get('speech_language','auto'))
+            model_name = speech.model_name(mode,p.get('caption_script','original'),language or 'auto')
             separate_model=model_name!='base'
             if not separate_model and model is not None:
                 recognizer = model
@@ -279,10 +285,8 @@ def process(project_id):
                 models[model_name] = recognizer
                 if not separate_model:
                     model = recognizer
-            language=p.get('speech_language','auto')
-            language_warning=speech.check_language(recognizer,audio_source,language)
-            store.mutate(project_id,lambda project:project.update(speech_warning=language_warning))
-            if language=='auto':
+            store.mutate(project_id,lambda project:project.update(speech_warning=language_warning,recognized_speech_language=language))
+            if not language:
                 segments, info = speech.transcribe(recognizer,audio_source,mode,caption_script=p.get('caption_script','original'))
             else:
                 segments, info = speech.transcribe(recognizer,audio_source,mode,language=language,caption_script=p.get('caption_script','original'))
@@ -347,6 +351,21 @@ def language_capabilities():
     return capability_catalog()
 
 
+@app.get('/api/sound-effects/{name}')
+def sound_effect_preview(name:Literal[*compositor.SOUNDS]):
+    folder=store.DATA/'sound-effects'
+    folder.mkdir(exist_ok=True)
+    path=folder/(name+'.wav')
+    if not path.is_file():
+        temporary=folder/(name+'-'+uuid.uuid4().hex+'.wav')
+        try:
+            media.run(['-f','lavfi','-i',compositor.SOUNDS[name],'-ac','1','-c:a','pcm_s16le',str(temporary)],timeout=15)
+            if not path.is_file():temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return FileResponse(path,media_type='audio/wav',content_disposition_type='inline')
+
+
 @app.get('/api/discover/{video_id}/thumbnail')
 def discovery_thumbnail(video_id:str):
     return Response(thumbnails.fetch_image(video_id),media_type='image/jpeg')
@@ -364,6 +383,9 @@ class DubbingInput(BaseModel):
 
 
 def invalidate_exports(p):
+    dub=p.get('dubbing',{})
+    if dub.get('enabled') and dub.get('fingerprint')!=dubbing.fingerprint(p['transcript'],dub.get('language')):
+        dub.update(status='stale',error='Captions changed. Generate the translated voice again to match the edited words and timing, or use original audio.')
     for clip in p['clips']:
         clip.update(status='draft',file=None,error=None)
         selection.invalidate(clip)
@@ -373,32 +395,46 @@ def run_dubbing(project_id,options,snapshot):
     folder=directory(project_id)
     filename='dub-'+uuid.uuid4().hex+'.wav'
     output=folder/filename
+    video=output.with_suffix('.mp4')
     try:
         target=CAPTION_TARGETS[options.caption_script]
         native_script='urdu' if options.caption_script=='roman_urdu' else options.caption_script
-        native=translation.convert_segments(snapshot['source_transcript'],snapshot['language'],native_script)
-        transcript=romanization.convert_segments(native,'roman_urdu') if options.caption_script=='roman_urdu' else native
-        # Synthesized speech has sentence timing, never the old speaker's word timings.
-        for segment in transcript:
-            segment.pop('words',None)
-            segment['timing']='dubbed_sentence'
+        groups=dubbing.sentence_groups(snapshot['source_transcript'])
+        engine_name='m2m100-v1' if translation.multilingual.installed(translation.ROOT) else 'argos-v1'
+        cache=folder/('dub-text-'+dubbing.fingerprint(groups,snapshot['language']+'>'+target+'|'+engine_name)+'.json')
+        if cache.is_file():
+            native=json.loads(cache.read_text(encoding='utf-8'))
+        else:
+            def translation_progress(done,total):
+                store.mutate(project_id,lambda p:p.update(processing_message=f'Translating captions: {done} / {total} sentences'))
+            native=translation.convert_segments(groups,snapshot['language'],native_script,progress=translation_progress)
+            cache.write_text(json.dumps(native,ensure_ascii=False),encoding='utf-8')
         last_update=[0]
         def progress(done,total):
             if time.monotonic()-last_update[0]>1 or done==total:
                 store.mutate(project_id,lambda p:p.update(processing_message=f'Preparing translated voice: {done} / {total} sentences'))
                 last_update[0]=time.monotonic()
         dubbing.create_track(native,target,snapshot['duration'],output,progress)
+        transcript=romanization.convert_segments(native,'roman_urdu') if options.caption_script=='roman_urdu' else native
+        for segment in transcript:
+            segment.pop('words',None)
+            segment['timing']='dubbed_sentence'
+        store.mutate(project_id,lambda p:p.update(processing_message='Preparing playable translated video…'))
+        dubbing.create_video(folder/'source',output,video,snapshot['duration'])
         def finish(p):
+            if not p.get('source_transcript') and snapshot['language']==p.get('language'):
+                p['source_transcript']=deepcopy(snapshot['source_transcript'])
             p.update(status='ready',error=None,processing_message=None,transcript=transcript,
                      caption_script=options.caption_script,caption_warning=None,dubbing_error=None)
             p.pop('requested_caption_script',None)
             p['dubbing']={'enabled':True,'status':'ready','language':target,'caption_script':options.caption_script,
-                          'file':filename,'engine':'eSpeak NG','mouth_animation':False,
+                          'file':filename,'video_file':video.name,'engine':'eSpeak NG','mouth_animation':False,
                           'fingerprint':dubbing.fingerprint(transcript,target)}
             invalidate_exports(p)
         p=store.mutate(project_id,finish)
     except Exception as exc:
         output.unlink(missing_ok=True)
+        video.unlink(missing_ok=True)
         log.exception('Offline dubbing failed')
         store.mutate(project_id,lambda p:p.update(status='ready',processing_message=None,
                      dubbing_error=str(exc),dubbing=snapshot.get('dubbing',{})))
@@ -416,10 +452,14 @@ def translate_voice(project_id:str,options:DubbingInput):
         # Honor edits to text already in the requested output language. A saved
         # translated transcript is not evidence that the original audio spoke it.
         current_language=CAPTION_TARGETS.get(current.get('caption_script')) or current.get('language')
-        if current.get('transcript') and current_language==target and current.get('caption_script')!='roman_urdu':
+        if current.get('transcript') and (current_language==target or not current.get('source_transcript')) and current.get('caption_script')!='roman_urdu':
             snapshot.update(source_transcript=deepcopy(current['transcript']),language=current_language)
         if not snapshot.get('source_transcript') or not snapshot.get('language'):
             raise HTTPException(400,'Re-transcribe the actual source audio first. Dubbing requires saved original-language speech and timestamps.')
+        try:
+            for segment in snapshot['source_transcript']:speech.validate_text(segment['text'])
+        except ValueError as exc:
+            raise HTTPException(400,str(exc)) from exc
         if not target or not translation.route_available(snapshot['language'],target):
             raise HTTPException(400,'No installed translation model supports this language pair. Your current captions and source audio were kept.')
         if target not in dubbing.voices():
@@ -431,7 +471,7 @@ def translate_voice(project_id:str,options:DubbingInput):
             raise HTTPException(409,'Caption language or text changed. Reload the project before translating the voice.')
         if not options.enabled:
             if p.get('dubbing',{}).get('enabled'):
-                p['dubbing']['enabled']=False
+                p['dubbing'].update(enabled=False,error=None)
                 invalidate_exports(p)
             p['dubbing_error']=None
         else:
@@ -453,6 +493,21 @@ def dubbing_audio(project_id:str):
     if not path:
         raise HTTPException(404,'No translated voice is enabled.')
     return FileResponse(path,media_type='audio/wav',content_disposition_type='inline')
+
+
+@app.get('/api/projects/{project_id}/dubbing/video')
+def dubbing_video(project_id:str):
+    p=project_or_404(project_id)
+    folder=directory(project_id)
+    try:
+        audio=dubbing.audio_for_project(p,folder)
+    except ValueError as exc:
+        raise HTTPException(409,str(exc)) from exc
+    filename=p.get('dubbing',{}).get('video_file')
+    if not audio or not filename:raise HTTPException(404,'No translated video is ready. Generate the translated voice first.')
+    path=(folder/filename).resolve()
+    if path.parent!=folder.resolve() or not path.is_file():raise HTTPException(404,'Translated video is missing. Regenerate the translated voice.')
+    return FileResponse(path,media_type='video/mp4',filename='zyntracut-translated.mp4',content_disposition_type='inline')
 
 @app.get('/api/projects')
 def projects(request: Request):
@@ -756,9 +811,7 @@ def set_transcript_script(p,script):
         else:p.pop('requested_caption_script',None)
     p['caption_script']=effective
     if p['transcript']!=previous:
-        for c in p['clips']:
-            c.update(status='draft',file=None,error=None)
-            selection.invalidate(c)
+        invalidate_exports(p)
 
 
 class TranscriptScriptInput(BaseModel):
@@ -800,9 +853,7 @@ def save_transcript(project_id: str, segments: list[Segment]):
             old=previous.get(s['id'],{})
             if all(old.get(k)==s[k] for k in ('text','start','end')) and old.get('words'):
                 s['words']=old['words']
-        for c in p['clips']:
-            c.update(status='draft', file=None)
-            selection.invalidate(c)
+        invalidate_exports(p)
     p = store.mutate(project_id, update)
     if not p:
         raise HTTPException(404, 'Project not found')
@@ -837,7 +888,7 @@ class EffectSettings(BaseModel):
     filler_layout: Literal['full','pip'] = 'full'
     music_asset_id: str|None = Field(default=None,pattern=r'^[a-f0-9]{32}$')
     music_volume: float = Field(default=.15,ge=0,le=1,allow_inf_nan=False)
-    sound_effect: Literal['none','pop','ding','whoosh'] = 'none'
+    sound_effect: Literal['none',*compositor.SOUNDS] = 'none'
     sound_at: float = Field(default=0,ge=0,le=600,allow_inf_nan=False)
     sound_volume: float = Field(default=.5,ge=0,le=1,allow_inf_nan=False)
     transition: Literal['none','fade','white'] = 'none'

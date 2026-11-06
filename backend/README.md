@@ -24,6 +24,7 @@ Render fonts are bundled in `../frontend/public/fonts`; clone the complete
 repository when deploying the backend, even when only this service is started.
 
 ```powershell
+.\.venv\Scripts\python.exe run.py setup-multilingual
 .\.venv\Scripts\python.exe run.py setup-translation
 .\.venv\Scripts\python.exe run.py setup-translation --pairs en:es
 .\.venv\Scripts\python.exe run.py setup-dubbing

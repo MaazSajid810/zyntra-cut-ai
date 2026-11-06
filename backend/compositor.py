@@ -4,6 +4,13 @@ SOUNDS={
     'pop':'aevalsrc=0.4*sin(2*PI*(150+900*exp(-30*t))*t)*exp(-35*t):d=0.18:s=48000',
     'ding':'sine=frequency=1320:duration=0.65:sample_rate=48000,afade=t=out:st=0.02:d=0.6',
     'whoosh':'anoisesrc=color=pink:duration=0.6:amplitude=0.25:seed=41,highpass=f=600,lowpass=f=6500,afade=t=in:d=0.1,afade=t=out:st=0.2:d=0.4',
+    'click':'aevalsrc=0.5*sin(2*PI*2200*t)*exp(-160*t):d=0.08:s=48000',
+    'success':'aevalsrc=0.25*(sin(2*PI*660*t)*exp(-12*t)+gte(t\\,0.12)*sin(2*PI*880*(t-0.12))*exp(-12*max(0\\,t-0.12))+gte(t\\,0.24)*sin(2*PI*1100*(t-0.24))*exp(-10*max(0\\,t-0.24))):d=0.85:s=48000',
+    'error':'aevalsrc=0.3*sin(2*PI*180*t)*if(lt(t\\,0.15)\\,1\\,if(between(t\\,0.22\\,0.37)\\,1\\,0)):d=0.45:s=48000,afade=t=out:st=0.35:d=0.1',
+    'impact':'aevalsrc=0.6*sin(2*PI*(55+100*exp(-22*t))*t)*exp(-12*t):d=0.6:s=48000',
+    'sparkle':'aevalsrc=0.18*(sin(2*PI*1760*t)+0.5*sin(2*PI*2640*t))*exp(-7*t):d=0.9:s=48000',
+    'riser':'aevalsrc=0.22*sin(2*PI*(180*t+1800*t*t))*sin(PI*t/0.8):d=0.8:s=48000',
+    'scratch':'anoisesrc=color=pink:duration=0.45:amplitude=0.3:seed=23,highpass=f=900,lowpass=f=5000,tremolo=f=24:d=0.9,afade=t=in:d=0.01,afade=t=out:st=0.3:d=0.15',
 }
 
 

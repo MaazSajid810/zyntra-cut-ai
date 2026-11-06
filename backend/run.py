@@ -12,7 +12,7 @@ REPOSITORY = SERVICE.parent
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', nargs='?', default='serve', choices=[
-        'serve', 'test', 'setup-translation', 'setup-dubbing', 'setup-fonts', 'verify-whisper'])
+        'serve', 'test', 'setup-translation', 'setup-multilingual', 'setup-dubbing', 'setup-fonts', 'verify-whisper'])
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('--port', type=int, default=8000)
     options, remaining = parser.parse_known_args(argv)

@@ -1,3 +1,14 @@
+## November 6, 2026: captions, dubbing and sound effects
+
+- The complete backend suite passed 491 tests. An additional AV1 preview regression passed separately after being added. Production webpack build, TypeScript checking and the three deployment configuration checks passed.
+- Three headless Microsoft Edge checks passed in 2.7 minutes: complete AV1 dubbed-video playback without clips, original/dub comparison and stale-caption protection; scheduled sticker/voice/clip workflows; and logo, watermark, B-roll, Sparkle sound preview/volume, transitions and real clip export. Test projects were removed.
+- A private 569.301-second English upload had been decoded with a forced Punjabi source setting. Its original file and previous transcript were preserved. Actual source recognition produced 144 English segments with word timestamps. Offline Urdu dubbing then produced 73 fitted sentence groups and a complete 1920x1080 AV1/AAC MP4, with a measured duration of 569.301 seconds and a matching caption/audio fingerprint.
+- On a real 24-second Urdu dialogue sample, batched decoding returned only one late segment. Independent decoding returned 13 segments across the sample. Regional Quick mode now uses independent decoding. This comparison checks speech coverage; names and exact wording still need review.
+- Confident source-language mismatches are corrected before decoding. Uncertain mismatches stop with an actionable message. Repeated syllables and combining marks inside a token are rejected before saving captions or generating speech.
+- Optional, MIT-licensed M2M100 INT8 translation is installed through a pinned, checksum-verified setup command. Selected simple positive/negative Urdu and Hindi meanings were tested. Translation quality varies; Punjabi and Sindhi examples included poor translations. Review translated meaning against the saved source text.
+- Dubbing creates a full playable MP4 even when no clips exist. It retains supported source video streams, fits voice to adjacent sentence groups, caches translated drafts for retries and marks voice tracks stale after caption edits. The original video stays available. Speech is basic eSpeak synthesis; mouth movements and speaker identity stay original.
+- Ten original synthesized sound effects share the same FFmpeg expressions for preview and export. Eleven dedicated checks verified preview access/ranges, real PCM energy, insertion time, silence outside the effect and MP4 duration. Volume and output-time controls remain available alongside background music.
+
 # Validation record
 
 ## November 5: separate frontend and backend folders
