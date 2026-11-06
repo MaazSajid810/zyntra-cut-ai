@@ -14,3 +14,6 @@ urdunlp @ https://github.com/hammasbuilds/urdunlp/archive/a2622de9aa14ba508772d9
 pillow>=11,<13
 numpy>=1.26,<3
 sentencepiece>=0.2,<0.3
+
+# CPU face detection for full-screen, person-following reel crops.
+opencv-python-headless>=4.13,<5

@@ -83,6 +83,21 @@ commands; the frontend commands are the same.
    **Apply edits to all clips** can copy styling across the project.
 6. Render the changes, preview the finished video, then click Download.
 
+New imports start as **9:16 full-screen reels** with local face following. In an
+existing clip, click **Full-screen 9:16 reel**, then **Apply & render**. Under
+**Frame & trim**, choose a fixed crop for gameplay, or keep the whole source with
+padding. Face following uses a bundled CPU detector and caches each camera path;
+it follows a visible face, not the active speaker or a person with no visible face.
+When detection is unavailable, the export fills the frame using your crop sliders
+and displays a notice. Review scene cuts and multiple-person shots.
+
+**Remove old captions & fill reel** crops away the bottom source-caption area.
+Adjust the removed edge in **Frame & trim**, or select the top edge instead. This
+removes part of the picture; it does not reconstruct text-covered backgrounds.
+New captions render afterwards. **Apply & render all clips** copies these settings
+and analyzes each clip's face movement separately, preserving its source range.
+Previously saved fit/crop and black-cover settings keep their existing behavior.
+
 In a clip, open **Audio & sound effects**. Ten built-in effects have an audio
 preview, volume and start time in exported-clip seconds. Use **Apply & render**
 to mix the chosen effect with original or dubbed speech and optional music.
@@ -130,7 +145,8 @@ do not mean every language can be translated. Review recognition and translation
 ## Screenshots
 
 These are captures of the running app in an isolated guest workspace. The sample
-title video was created by local Studio; no private user footage is shown.
+title video was created by local Studio. The reel example uses a public-domain
+NASA test photograph; no private user footage is shown.
 
 | Create | Clip results |
 | --- | --- |
@@ -139,6 +155,8 @@ title video was created by local Studio; no private user footage is shown.
 | Visual editor | Local Studio |
 | --- | --- |
 | ![Visual editor](docs/screenshots/editor.png) | ![Local Studio](docs/screenshots/studio.png) |
+
+![Full-screen reel editor](docs/screenshots/reel-editor.png)
 
 ![Wizard commands](docs/screenshots/wizard.png)
 

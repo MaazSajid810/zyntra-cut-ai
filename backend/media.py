@@ -7,7 +7,7 @@ from pathlib import Path
 
 import av
 import imageio_ffmpeg
-from . import captions,compositor
+from . import captions,compositor,tracking
 
 FFMPEG = os.environ.get('FFMPEG_BINARY') or imageio_ffmpeg.get_ffmpeg_exe()
 FONTS = Path(__file__).resolve().parents[1]/'frontend'/'public'/'fonts'
@@ -246,28 +246,36 @@ def render(source, directory, clip, segments, output,assets=None,audio_source=No
     else:
         factor = 1 if quality=='high' else min(1, size*16/9/max(info['width'],info['height']))
         width, height = max(2,round(info['width']*factor/2)*2), max(2,round(info['height']*factor/2)*2)
-    # Crop at source resolution first, avoiding a large unnecessary upscale.
-    crop_width = max(2,int(min(info['width'],info['height']*width/height)/2)*2)
-    crop_height = max(2,int(min(info['height'],info['width']*height/width)/2)*2)
-    if clip.get('framing', 'fit') == 'fit':
-        # Preserve the entire source, including faces/webcams near its edges.
-        filters = f'scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
-    else:
-        left = int((info['width']-crop_width)*clip.get('crop_x',50)/100/2)*2
-        top = int((info['height']-crop_height)*clip.get('crop_y',50)/100/2)*2
-        filters = f'crop={crop_width}:{crop_height}:{left}:{top},scale={width}:{height},setsar=1'
+    # Crop the old caption edge first, then fill the output with retained pixels.
+    source_width, source_height, source_top = tracking.source_region(info, clip)
+    prefix = []
+    framing_result = None
     if clip.get('hide_webcam', False):
-        # Cover in SOURCE coordinates before reframing, so every output ratio
-        # and horizontal mirroring hides the same selected source region.
         left = int(info['width']*clip.get('webcam_x',75)/100)
         top = int(info['height']*clip.get('webcam_y',0)/100)
         right = min(info['width'], math.ceil(info['width']*(clip.get('webcam_x',75)+clip.get('webcam_width',25))/100))
         bottom = min(info['height'], math.ceil(info['height']*(clip.get('webcam_y',0)+clip.get('webcam_height',35))/100))
-        filters = f'drawbox=x={left}:y={top}:w={right-left}:h={bottom-top}:color=black:t=fill,' + filters
+        prefix.append(f'drawbox=x={left}:y={top}:w={right-left}:h={bottom-top}:color=black:t=fill')
     if clip.get('cover_source_captions'):
-        top=int(info['height']*clip.get('source_caption_y',75)/100)
-        band=math.ceil(info['height']*clip.get('source_caption_height',25)/100)
-        filters=f'drawbox=x=0:y={top}:w=iw:h={band}:color=black:t=fill,'+filters
+        if clip.get('source_caption_method','cover') == 'cover':
+            top=int(info['height']*clip.get('source_caption_y',75)/100)
+            band=math.ceil(info['height']*clip.get('source_caption_height',25)/100)
+            prefix.append(f'drawbox=x=0:y={top}:w=iw:h={band}:color=black:t=fill')
+        else:
+            prefix.append(f'crop=iw:{source_height}:0:{source_top}')
+    crop_width = max(2,int(min(source_width,source_height*width/height)/2)*2)
+    crop_height = max(2,int(min(source_height,source_width*height/width)/2)*2)
+    if clip.get('framing', 'fit') == 'fit':
+        framing = f'scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1'
+    else:
+        left = int((source_width-crop_width)*clip.get('crop_x',50)/100/2)*2
+        top = int((source_height-crop_height)*clip.get('crop_y',50)/100/2)*2
+        framing = f'crop={crop_width}:{crop_height}:{left}:{top}'
+        if clip.get('framing') == 'follow':
+            framing_result = tracking.analyze(source, directory, clip, info, crop_width, crop_height)
+            framing = tracking.crop_filter(framing_result, directory, crop_width, crop_height)
+        framing += f',scale={width}:{height},setsar=1'
+    filters = ','.join([*prefix, framing])
     video_effects = {
         'none':'', 'vivid':'eq=saturation=1.5:contrast=1.08',
         # Include midtones: shadow-only adjustments leave neutral gray unchanged.
@@ -341,3 +349,5 @@ def render(source, directory, clip, segments, output,assets=None,audio_source=No
         args += ['-c:v','libx264','-preset',{'fast':'ultrafast','standard':'veryfast','high':'fast'}[quality],'-crf',{'fast':'25','standard':'21','high':'19'}[quality],'-c:a','aac','-movflags','+faststart']
     args += ['-threads',str(max(1,min(4,(os.cpu_count() or 2)//2))),'-pix_fmt','yuv420p','-b:a','128k',str(output)]
     run(args, cwd=directory)
+    return {'framing_notice': framing_result['notice'] if framing_result else None,
+            'framing_analysis': {k: framing_result[k] for k in ('samples','detected')} if framing_result else None}

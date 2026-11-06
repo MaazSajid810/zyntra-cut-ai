@@ -331,9 +331,9 @@ def render_clip(project_id, clip_id):
         folder = directory(project_id)
         filename = f"{clip_id}-{uuid.uuid4().hex[:8]}.{c.get('output_format','mp4')}"
         dubbed_audio=dubbing.audio_for_project(p,folder)
-        media.render(folder / 'source', folder, c, p['transcript'], folder / filename,assets=p.get('assets',[]),**({'audio_source':dubbed_audio} if dubbed_audio else {}))
+        result = media.render(folder / 'source', folder, c, p['transcript'], folder / filename,assets=p.get('assets',[]),**({'audio_source':dubbed_audio} if dubbed_audio else {}))
         def done(p):
-            next(c for c in p['clips'] if c['id'] == clip_id).update(status='ready', file=filename)
+            next(c for c in p['clips'] if c['id'] == clip_id).update(status='ready', file=filename, **(result or {}))
         store.mutate(project_id, done)
     except Exception as exc:
         log.exception('Render failed')
@@ -603,6 +603,7 @@ def upload(file: UploadFile, request: Request):
                 target.write(chunk)
         info = media.probe(source)
         p = {'id': project_id, 'name': (file.filename or 'Untitled video')[:200], 'created_at': datetime.now(timezone.utc).isoformat(), 'size': size, **info, 'status': 'uploaded', 'error': None, 'language': None, 'transcript': [], 'clips': []}
+        p['default_effects'] = EffectSettings(aspect='vertical',framing='follow').model_dump()
         p['owner_id'] = request.state.owner_id
         try:
             media.run(['-ss', str(min(1, info['duration']/2)), '-i', str(source), '-frames:v', '1', '-vf', 'scale=640:-2', str(folder / 'poster.jpg')], timeout=30)
@@ -900,7 +901,7 @@ class EffectSettings(BaseModel):
     webcam_width: float = Field(default=25,ge=1,le=100,allow_inf_nan=False)
     webcam_height: float = Field(default=35,ge=1,le=100,allow_inf_nan=False)
     aspect: Literal['vertical','square','original','landscape','portrait'] = 'original'
-    framing: Literal['fit','crop'] = 'fit'
+    framing: Literal['fit','crop','follow'] = 'fit'
     crop_x: float = Field(default=50,ge=0,le=100,allow_inf_nan=False)
     crop_y: float = Field(default=50,ge=0,le=100,allow_inf_nan=False)
     style: Literal['mint','clean','yellow','boxed','neon','neon_highlight','minimal','cyan','orange','red','comic','elegant','shadow','none'] = 'mint'
@@ -930,6 +931,7 @@ class EffectSettings(BaseModel):
     sticker_duration: float = Field(default=3,ge=.2,le=60,allow_inf_nan=False)
     sticker_at: float = Field(default=0,ge=0,le=600,allow_inf_nan=False)
     voice_strength: float = Field(default=1,ge=0,le=1,allow_inf_nan=False)
+    source_caption_method: Literal['cover','crop_bottom','crop_top'] = 'cover'
     cover_source_captions: bool = False
     source_caption_y: float = Field(default=75,ge=0,le=99,allow_inf_nan=False)
     source_caption_height: float = Field(default=25,ge=1,le=100,allow_inf_nan=False)
@@ -939,7 +941,9 @@ class EffectSettings(BaseModel):
         if self.image_end<=self.image_start:raise ValueError('Photo end must be after its start.')
         if self.filler_end<=self.filler_start:raise ValueError('B-roll end must be after its start.')
         if self.source_caption_y+self.source_caption_height>100:
-            raise ValueError('Source caption cover must stay inside the video.')
+            raise ValueError('Source caption band must stay inside the video.')
+        if self.cover_source_captions and (self.source_caption_method=='crop_bottom' and self.source_caption_y<10 or self.source_caption_method=='crop_top' and self.source_caption_y+self.source_caption_height>90):
+            raise ValueError('Keep at least 10% of the picture when cropping old captions.')
         if self.webcam_x+self.webcam_width>100 or self.webcam_y+self.webcam_height>100:
             raise ValueError('Webcam cover must stay within the source frame.')
         return self

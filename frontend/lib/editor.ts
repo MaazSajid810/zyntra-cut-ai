@@ -8,10 +8,10 @@ export type EffectSettings = {
   music_asset_id:string|null; music_volume:number; sound_effect:typeof SOUND_EFFECTS[number][0]; sound_at:number; sound_volume:number;
   transition:'none'|'fade'|'white'; transition_duration:number;
   caption_mode:'phrase'|'karaoke'|'word'; caption_animation:'none'|'pop'|'bounce'|'scale'|'fade'; highlight_color:string; sticker_enabled:boolean; audio_leveling:boolean; denoise:boolean; zoom:'none'|'gentle'|'punch';
-  sticker_timing:'full'|'start'|'middle'|'end'|'custom'; sticker_animation:'none'|'pop'|'fade'|'slide'; sticker_duration:number; sticker_at:number; voice_strength:number; cover_source_captions:boolean; source_caption_y:number; source_caption_height:number;
+  sticker_timing:'full'|'start'|'middle'|'end'|'custom'; sticker_animation:'none'|'pop'|'fade'|'slide'; sticker_duration:number; sticker_at:number; voice_strength:number; source_caption_method:'cover'|'crop_bottom'|'crop_top'; cover_source_captions:boolean; source_caption_y:number; source_caption_height:number;
   speed:number;
   hide_webcam:boolean; webcam_x:number; webcam_y:number; webcam_width:number; webcam_height:number;
-  framing:'fit'|'crop'; crop_x:number; crop_y:number;
+  framing:'fit'|'crop'|'follow'; crop_x:number; crop_y:number;
   aspect:'vertical'|'square'|'original'|'landscape'|'portrait';
   style:'mint'|'clean'|'yellow'|'boxed'|'neon'|'neon_highlight'|'minimal'|'cyan'|'orange'|'red'|'comic'|'elegant'|'shadow'|'none';
   voice_effect:'none'|'deep'|'high'|'radio'|'echo'|'mute';
@@ -22,13 +22,14 @@ export type EffectSettings = {
   sticker:'none'|'subscribe'|'follow'|'like'; sticker_position:'top-left'|'top-right'|'bottom-left'|'bottom-right'; sticker_size:number;
   overlay_text:string; overlay_position:'top'|'center'|'bottom';
 };
-export type Clip = Partial<EffectSettings> & Pick<EffectSettings,'aspect'|'style'> & {id:string; batch_id?:string; title:string; start:number; end:number; status:string; score:number|null; reason:string; selection_evidence?:{factors:Record<string,number>;opening_excerpt:string;recommendations:string[];limitations:string}; file:string|null; error:string|null};
-export const defaultEffects:EffectSettings = {image_asset_id:null,image_start:0,image_end:3,image_layout:"overlay",image_fit:"contain",image_opacity:1,image_width:35,image_x:50,image_y:50,caption_offset:0,watermark_enabled:false,watermark_text:'',watermark_opacity:.18,watermark_size:72,watermark_color:'#ffffff',watermark_x:50,watermark_y:50,logo_asset_id:null,logo_opacity:.4,logo_width:18,logo_x:90,logo_y:10,filler_asset_id:null,filler_start:0,filler_end:3,filler_layout:'full',music_asset_id:null,music_volume:.15,sound_effect:'none',sound_at:0,sound_volume:.5,transition:'none',transition_duration:.35,sticker_timing:'full',sticker_animation:'none',sticker_duration:3,sticker_at:0,voice_strength:1,cover_source_captions:false,source_caption_y:75,source_caption_height:25,caption_mode:'karaoke',caption_animation:'pop',highlight_color:'#ffdf35',sticker_enabled:false,audio_leveling:false,denoise:false,zoom:'none',speed:1,hide_webcam:false,webcam_x:75,webcam_y:0,webcam_width:25,webcam_height:35,framing:'fit',crop_x:50,crop_y:50,aspect:'original',style:'mint',voice_effect:'none',video_effect:'none',render_quality:'high',output_format:'mp4',subtitle_font:'Poppins',subtitle_size:56,subtitle_color:null,subtitle_position:'bottom',subtitle_uppercase:false,overlay_text:'',overlay_position:'top',sticker:'none',sticker_position:'top-right',sticker_size:30};
+export type Clip = Partial<EffectSettings> & Pick<EffectSettings,'aspect'|'style'> & {id:string; batch_id?:string; title:string; start:number; end:number; status:string; score:number|null; reason:string; selection_evidence?:{factors:Record<string,number>;opening_excerpt:string;recommendations:string[];limitations:string}; file:string|null; error:string|null; framing_notice?:string|null; framing_analysis?:{samples:number;detected:number}|null};
+export const defaultEffects:EffectSettings = {image_asset_id:null,image_start:0,image_end:3,image_layout:"overlay",image_fit:"contain",image_opacity:1,image_width:35,image_x:50,image_y:50,caption_offset:0,watermark_enabled:false,watermark_text:'',watermark_opacity:.18,watermark_size:72,watermark_color:'#ffffff',watermark_x:50,watermark_y:50,logo_asset_id:null,logo_opacity:.4,logo_width:18,logo_x:90,logo_y:10,filler_asset_id:null,filler_start:0,filler_end:3,filler_layout:'full',music_asset_id:null,music_volume:.15,sound_effect:'none',sound_at:0,sound_volume:.5,transition:'none',transition_duration:.35,sticker_timing:'full',sticker_animation:'none',sticker_duration:3,sticker_at:0,voice_strength:1,source_caption_method:'cover',cover_source_captions:false,source_caption_y:75,source_caption_height:25,caption_mode:'karaoke',caption_animation:'pop',highlight_color:'#ffdf35',sticker_enabled:false,audio_leveling:false,denoise:false,zoom:'none',speed:1,hide_webcam:false,webcam_x:75,webcam_y:0,webcam_width:25,webcam_height:35,framing:'follow',crop_x:50,crop_y:50,aspect:'vertical',style:'mint',voice_effect:'none',video_effect:'none',render_quality:'high',output_format:'mp4',subtitle_font:'Poppins',subtitle_size:56,subtitle_color:null,subtitle_position:'bottom',subtitle_uppercase:false,overlay_text:'',overlay_position:'top',sticker:'none',sticker_position:'top-right',sticker_size:30};
 export function resolveEffects(clip?:Clip):EffectSettings {
   const result = {...defaultEffects};
   for(const key of Object.keys(defaultEffects) as (keyof EffectSettings)[]) {
     if(clip&&clip[key]!==undefined) Object.assign(result,{[key]:clip[key]});
   }
+  if(clip&&!clip.framing)result.framing='fit'; // Preserve saved legacy crops.
   if(clip&&clip.voice_strength===undefined)result.voice_strength=.5;
   if(clip&&!clip.render_quality) result.render_quality='standard';
   return result;

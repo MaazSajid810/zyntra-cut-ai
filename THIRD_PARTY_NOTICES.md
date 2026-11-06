@@ -41,3 +41,14 @@ Noto Sans Devanagari (Noto Project Authors / Google Fonts) is bundled under SIL 
   and preserves the model card locally. Model weights stay in ignored private
   storage and are not redistributed in this source repository. Machine
   translation quality varies, particularly for low-resource languages.
+
+## Full-screen reel framing
+
+- OpenCV headless (4.14.0.94 in the tested lockfile), Apache 2.0, runs CPU face
+  detection. See the distribution's bundled notices.
+- The small YuNet 2023mar ONNX detector is bundled under MIT, copyright 2020
+  Shiqi Yu. Its full license and immutable OpenCV Zoo source/checksum are in
+  `backend/resources/yunet/`. No recognition/identity model is used.
+- The face-tracking test fixture is a crop of NASA's public-domain Eileen Collins
+  astronaut photograph, from scikit-image 0.25.2. Provenance is recorded in
+  `backend/tests/fixtures/README.md`. No user footage is included.

@@ -1,3 +1,36 @@
+## November 7, 2026: full-screen reels and local face following
+
+- New imports and new editor clips default to 9:16 with a filled frame. Existing
+  saved fit/crop/black-cover settings retain their behavior. The editor offers
+  Full-screen 9:16 reel and Remove old captions & fill reel shortcuts, plus batch
+  application without changing clip titles or source ranges. The final video
+  preview uses a portrait stage matching the exported reel.
+- Bundled, checksum-verified MIT YuNet weights (232,589 bytes) and CPU OpenCV
+  detect visible faces at 2 Hz. A private cached camera path interpolates the crop
+  every frame before speed changes, captions, layers and audio composition. Same-
+  ratio footage skips unnecessary detection. No-face/missing-detector cases keep
+  a filled manual crop and report the fallback. This does not identify an active
+  speaker, recognize identities, track hidden faces or guarantee perfect framing
+  through cuts/multiple-person scenes.
+- Old burned-in caption areas can be cropped from either source edge before
+  filling the reel. Actual picture content is removed; there is no inpainting or
+  background reconstruction. New captions are rendered afterwards. Separate
+  soft-subtitle streams remain excluded; the legacy black-band mode remains.
+- **500 complete backend tests passed** in 322.23 seconds. Eight dedicated reel
+  checks also passed after the same-ratio optimization. Actual decoded/rendered
+  footage checks moving-face retention, filled edges, caption-band removal, new
+  captions, 2x speed, composited sound and duration, cache reuse and honest fallback.
+  The only photographed fixture is a public-domain NASA image, not user footage.
+- Production webpack build, TypeScript and three deployment configuration checks
+  passed. Three relevant Microsoft Edge workflows passed: upload/manual subtitles/
+  MP4 and WebM export/bulk styling; source preview and import settings; and real
+  face-detected portrait playback/caption cropping/batch render with desktop and
+  mobile layouts. The last two were rerun on the final portrait-preview build.
+- Initial browser attempts needed test setup fixes for guest bootstrap and the
+  existing asynchronous 202 generation contract; both were rerun successfully.
+  Temporary projects were removed. All 34 pre-existing project records exactly
+  matched their saved snapshot after verification. Local frontend/API are running.
+
 ## November 6, 2026: captions, dubbing and sound effects
 
 - The complete backend suite passed 491 tests. An additional AV1 preview regression passed separately after being added. Production webpack build, TypeScript checking and the three deployment configuration checks passed.

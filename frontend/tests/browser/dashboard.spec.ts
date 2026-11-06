@@ -151,7 +151,8 @@ test('real upload, manual subtitles, render, preview and download',async({page,r
     await page.getByRole('button',{name:'Generate 7 new clips'}).click();
     const generation = await generationResponse;
     expect(generation.request().postDataJSON()).toMatchObject({clip_count:7,transcription_mode:'fast',selection_mode:'all',minimum_score:70,auto_render:false});
-    expect((await generation.json()).clip_generation.created).toBe(1);
+    expect([200,202]).toContain(generation.status());
+    await expect.poll(async()=>{const p=await(await page.request.get(`/api/projects/${project.id}`)).json();return p.clip_generation?.created;},{timeout:60000}).toBe(1);
     await expect(page.getByRole('region',{name:'Clip generation feedback',exact:true})).toContainText('Created 1 of 7 requested clips');
     await page.getByRole('button',{name:'New clip',exact:true}).click();
     await page.getByRole('button',{name:'All tools',exact:true}).click();
@@ -166,7 +167,7 @@ test('real upload, manual subtitles, render, preview and download',async({page,r
     await page.getByLabel('Clip speed',{exact:true}).selectOption('1.2');
     await page.getByLabel('Frame format',{exact:true}).selectOption('portrait');
     await page.getByLabel('Render quality').selectOption('fast');
-    await expect(page.getByLabel('Framing',{exact:true})).toHaveValue('fit');
+    await expect(page.getByLabel('Framing',{exact:true})).toHaveValue('follow');
     await page.getByLabel('Framing',{exact:true}).selectOption('crop');
     await page.getByRole('slider',{name:'Horizontal crop position'}).fill('80');
     await page.getByRole('slider',{name:'Vertical crop position'}).fill('20');
